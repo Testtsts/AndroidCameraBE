@@ -4,6 +4,8 @@ const fs = require("fs").promises;
 const path=require("path");
 const UPLOAD_PATH= "./uploads/";
 
+fs.mkdir(UPLOAD_PATH);
+
 const storage = multer.diskStorage({
     destination: (req, file, callback) => {
       callback(null, (UPLOAD_PATH) );  // ->("./uploads")  this is the destination where files will save in the HArdDisk Storage 
