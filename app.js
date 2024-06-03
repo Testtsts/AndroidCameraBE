@@ -1,10 +1,16 @@
 const express = require("express");
+const { mkdir } = require("fs");
 const multer = require("multer");
 const fs = require("fs").promises;
 const path=require("path");
 const UPLOAD_PATH= "./uploads/";
 
-fs.mkdir(UPLOAD_PATH);
+fs.access(UPLOAD_PATH)
+.then(()=>undefined)
+.catch(()=>{
+  mkdir(UPLOAD_PATH)
+})
+
 
 const storage = multer.diskStorage({
     destination: (req, file, callback) => {
