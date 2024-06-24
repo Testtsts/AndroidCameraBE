@@ -1,14 +1,21 @@
+const axios = require("axios");
 const express = require("express");
-const { mkdir } = require("fs");
 const multer = require("multer");
 const fs = require("fs").promises;
 const path=require("path");
 const UPLOAD_PATH= "./uploads/";
+const TAGGED_PATH="./tagged/";
 
 fs.access(UPLOAD_PATH)
 .then(()=>undefined)
 .catch(()=>{
-  mkdir(UPLOAD_PATH)
+  fs.mkdir(UPLOAD_PATH)
+})
+
+fs.access(TAGGED_PATH)
+.then(()=>undefined)
+.catch(()=>{
+  fs.mkdir(TAGGED_PATH)
 })
 
 
@@ -33,11 +40,58 @@ const PORT = process.env.PORT || 3000;
 
 app.get('/',  async(req, res) => {
   let data = {}
-  const files =  await fs.readdir(UPLOAD_PATH);
+  const files =  await fs.readdir(TAGGED_PATH);
   files.forEach(async (file,idx,files) => {
     // fileContent.push(await fs.readFile(path.join(UPLOAD_PATH,file)))
-    data[file]=await fs.readFile(path.join(UPLOAD_PATH,file),'base64');
+    data[file]=await fs.readFile(path.join(TAGGED_PATH,file),'base64');
     if (idx + 1 == files.length){
+      res.json(data)
+    }
+  });
+})
+
+app.post('/tagged',  async(req,res)=>{
+  let data = {}
+  const files =  await fs.readdir(UPLOAD_PATH);
+
+  files.forEach(async (file,idx,files) => {
+    // fileContent.push(await fs.readFile(path.join(UPLOAD_PATH,file)))
+    const encodedFile =await fs.readFile(path.join(UPLOAD_PATH,file),'base64');
+    await axios({
+      method: "POST",
+      url: "https://detect.roboflow.com/dog-breed-e2c2i/1",
+      params: {
+          api_key: "2sLc4ws7AZxcEflD1rDj"
+      },
+      data: encodedFile,
+      headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+      }
+    })
+    .then(function(response) {
+      data[file] = {
+        'base64':encodedFile,
+        'image':response.data.image,
+        'predictions':response.data.predictions
+      }
+      var fileExtension = file.split(".");
+      var predictionString= ""
+
+      for (const predictionIdx in data[file].predictions){
+        // console.log(data[file].predictions[predictionIdx].class)
+        predictionString+= data[file].predictions[predictionIdx].class
+      }
+      console.log(response.data);
+      console.log(TAGGED_PATH,predictionString,".",fileExtension[1])
+      fs.rename(path.join(UPLOAD_PATH,file),path.join(TAGGED_PATH,`${predictionString}.${fileExtension[1]}`))
+      
+    })
+    .catch(function(error) {
+      console.log(error.message);
+    });
+
+    if (idx + 1 == files.length){
+
       res.json(data)
     }
   });
@@ -48,6 +102,14 @@ app.post('/',upload.single('foto'), (req,res)=>{
     res.json({message:'OK'})
 })
 
-app.listen(PORT, () => {
+
+
+
+
+
+const server = app.listen(PORT, () => {
     console.log(`Example app listening on port ${PORT}`)
 })
+
+server.timeout= 5*60*1000
+
