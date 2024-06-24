@@ -83,7 +83,8 @@ app.post('/tagged',  async(req,res)=>{
       }
       console.log(response.data);
       console.log(TAGGED_PATH,predictionString,".",fileExtension[1])
-      fs.rename(path.join(UPLOAD_PATH,file),path.join(TAGGED_PATH,`${predictionString}.${fileExtension[1]}`))
+      fs.copyFile(path.join(UPLOAD_PATH,file),path.join(TAGGED_PATH,`${predictionString}${file}`))
+      fs.unlink(path.join(UPLOAD_PATH,file))
       
     })
     .catch(function(error) {
@@ -92,7 +93,7 @@ app.post('/tagged',  async(req,res)=>{
 
     if (idx + 1 == files.length){
 
-      res.json(data)
+      res.json({message:'OK'})
     }
   });
 })
