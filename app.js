@@ -5,12 +5,16 @@ const fs = require("fs").promises;
 const path=require("path");
 const UPLOAD_PATH= "./uploads/";
 const TAGGED_PATH="./tagged/";
+const PREDICTION_PATH="./predictions/";
 
-fs.access(UPLOAD_PATH)
+fs.access(PREDICTION_PATH)
 .then(()=>undefined)
 .catch(()=>{
-  fs.mkdir(UPLOAD_PATH)
+  fs.mkdir(PREDICTION_PATH)
 })
+
+
+
 
 fs.access(TAGGED_PATH)
 .then(()=>undefined)
@@ -18,6 +22,11 @@ fs.access(TAGGED_PATH)
   fs.mkdir(TAGGED_PATH)
 })
 
+fs.access(UPLOAD_PATH)
+.then(()=>undefined)
+.catch(()=>{
+  fs.mkdir(UPLOAD_PATH)
+})
 
 const storage = multer.diskStorage({
     destination: (req, file, callback) => {
@@ -43,7 +52,15 @@ app.get('/',  async(req, res) => {
   const files =  await fs.readdir(TAGGED_PATH);
   files.forEach(async (file,idx,files) => {
     // fileContent.push(await fs.readFile(path.join(UPLOAD_PATH,file)))
-    data[file]=await fs.readFile(path.join(TAGGED_PATH,file),'base64');
+    data[file]= {
+      'base64':null,
+      'predictions':null
+    }
+    var fileNameArray = file.split(".");
+    var filename= fileNameArray[0];
+    data[file].base64=await fs.readFile(path.join(TAGGED_PATH,file),'base64');
+    data[file].predictions = require(`${PREDICTION_PATH}${filename}.json`);
+    // data[file].predictions = predictions;
     if (idx + 1 == files.length){
       res.json(data)
     }
@@ -53,6 +70,9 @@ app.get('/',  async(req, res) => {
 app.post('/tagged',  async(req,res)=>{
   let data = {}
   const files =  await fs.readdir(UPLOAD_PATH);
+  if (files.length == 0){
+    res.json({message:'OK'})
+  }
 
   files.forEach(async (file,idx,files) => {
     // fileContent.push(await fs.readFile(path.join(UPLOAD_PATH,file)))
@@ -76,15 +96,15 @@ app.post('/tagged',  async(req,res)=>{
       }
       var fileExtension = file.split(".");
       var predictionString= ""
-
+1
       for (const predictionIdx in data[file].predictions){
-        // console.log(data[file].predictions[predictionIdx].class)
         predictionString+= data[file].predictions[predictionIdx].class
       }
       console.log(response.data);
       console.log(TAGGED_PATH,predictionString,".",fileExtension[1])
-      fs.copyFile(path.join(UPLOAD_PATH,file),path.join(TAGGED_PATH,`${predictionString}${file}`))
-      fs.unlink(path.join(UPLOAD_PATH,file))
+      // fs.rename(path.join(UPLOAD_PATH,file),path.join(TAGGED_PATH,`${predictionString}${file}`))
+      fs.rename(path.join(UPLOAD_PATH,file),path.join(TAGGED_PATH,`${file}`))
+      fs.writeFile(path.join(PREDICTION_PATH,fileExtension[0]+".json"),JSON.stringify(data[file].predictions,null,"\t"))
       
     })
     .catch(function(error) {

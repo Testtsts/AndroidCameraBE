@@ -130,5 +130,6 @@ dist
 .pnp.*
 
 # Files uploaded
-*uploads*
-*tagged*
+uploads*
+tagged*
+predictions*
