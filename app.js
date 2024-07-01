@@ -57,9 +57,9 @@ app.get('/',  async(req, res) => {
       'predictions':null
     }
     var fileNameArray = file.split(".");
-    var filename= fileNameArray[0];
+    var filename=fileNameArray[0];
     data[file].base64=await fs.readFile(path.join(TAGGED_PATH,file),'base64');
-    data[file].predictions = require(`${PREDICTION_PATH}${filename}.json`);
+    data[file].predictions = await require(`${PREDICTION_PATH}${filename}.json`);
     // data[file].predictions = predictions;
     if (idx + 1 == files.length){
       res.json(data)
